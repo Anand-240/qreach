@@ -9,7 +9,7 @@ const MESSAGES: Record<string, string> = {
   BadReviewWindow: "The review window must be between 1 hour and 7 days.",
   BriefTooLong: "The brief is too long (max 500 characters).",
   BadUrl: "The post link is not valid.",
-  PostAlreadyUsed: "This post is already linked to another campaign.",
+  PostAlreadyUsed: "You already used this post in another campaign.",
   NotSponsor: "Only the sponsor of this campaign can do that.",
   NotCreator: "Only the creator of this campaign can do that.",
   WrongStatus: "The campaign is not in the right state for this. Refresh the page.",

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import CheckClient from "./CheckClient";
 
-export const metadata = { title: "Is this post paid? - PaidPost" };
+export const metadata = { title: "Is this post paid? - QREACH" };
 
 export default function Page() {
   return (

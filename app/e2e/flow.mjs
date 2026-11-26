@@ -1,4 +1,4 @@
-// End-to-end run of every PaidPost button against a local anvil chain.
+// Shared helpers for the QREACH end-to-end suites. Run of every QREACH button against a local anvil chain.
 // A small EIP-1193 test wallet is injected; it forwards calls to anvil, whose dev accounts are unlocked.
 // Setup: anvil running, `bash reset.sh` done, app on :3210 with CHAIN_ID=31337 and the reset.sh addresses.
 // Run:   RUN=1 node flow.mjs
@@ -23,7 +23,16 @@ function walletScript(account) {
       async request({ method, params }) {
         if (method === "eth_requestAccounts") { authorized = true; localStorage.setItem("tw-auth", "1"); return [ACCT]; }
         if (method === "eth_accounts") return authorized ? [ACCT] : [];
-        if (method === "wallet_switchEthereumChain" || method === "wallet_addEthereumChain") return null;
+        if (method === "eth_chainId" && localStorage.getItem("tw-wrong-chain") === "1") return "0x1";
+        if (method === "wallet_switchEthereumChain" || method === "wallet_addEthereumChain") {
+          localStorage.removeItem("tw-wrong-chain");
+          (listeners.chainChanged ?? []).forEach((f) => f("0x7a69"));
+          return null;
+        }
+        if (method === "eth_sendTransaction" && localStorage.getItem("tw-reject") === "1") {
+          localStorage.removeItem("tw-reject");
+          const e = new Error("User rejected the request."); e.code = 4001; throw e;
+        }
         if (method === "wallet_requestPermissions") return [{ parentCapability: "eth_accounts" }];
         if (method === "wallet_revokePermissions") { authorized = false; localStorage.removeItem("tw-auth"); return null; }
         const r = await fetch(RPC, { method: "POST", headers: { "content-type": "application/json" },
@@ -36,6 +45,7 @@ function walletScript(account) {
       removeListener(ev, fn) { listeners[ev] = (listeners[ev] ?? []).filter((f) => f !== fn); },
     };
     window.ethereum = provider;
+    window.__twEmit = (ev, v) => (listeners[ev] ?? []).forEach((f) => f(v));
     const info = { uuid: "00000000-0000-4000-8000-000000000001", name: "Test Wallet", icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'/>", rdns: "dev.test.wallet" };
     const announce = () => window.dispatchEvent(new CustomEvent("eip6963:announceProvider", { detail: Object.freeze({ info, provider }) }));
     window.addEventListener("eip6963:requestProvider", announce);
@@ -131,7 +141,7 @@ try {
   await c.getByLabel("Link to your published post").fill("not a link");
   await c.getByText("That is not a valid link.").waitFor();
   await c.getByLabel("Link to your published post").fill("https://mobile.twitter.com/Riya/status/1234567890?s=20&t=abc");
-  await c.getByText("Will be recorded as https://x.com/riya/status/1234567890").waitFor();
+  await c.getByText("Will be recorded as https://x.com/i/status/1234567890").waitFor();
   await c.getByRole("button", { name: "Submit post" }).click();
   await done(c, "Submit post");
   await c.getByText("Waiting for the sponsor to approve").waitFor();
@@ -166,7 +176,7 @@ try {
   await shot(pub, "check-paid-mobile");
   await pub.getByLabel("Post link").fill("https://x.com/someone/status/999");
   await pub.getByRole("button", { name: "Is this post paid?" }).click();
-  await pub.getByText("No PaidPost record").waitFor({ timeout: 30000 });
+  await pub.getByText("No QREACH record").waitFor({ timeout: 30000 });
   await shot(pub, "check-none-mobile");
   await pub.getByRole("button", { name: "Menu" }).click();
   await pub.locator("#mobile-menu").getByRole("link", { name: "Judges" }).click();
@@ -196,14 +206,14 @@ try {
   await c.waitForURL(/\/k\//);
   await c.getByText("Shill Score / 100").waitFor({ timeout: 30000 });
   const score = await c.locator(".display.text-8xl").innerText();
-  if (score.trim() !== "74") throw new Error(`score ${score}`);
+  if (score.trim() !== "57") throw new Error(`score ${score}`); // 50*1 + 30*0.1 + 20*0.2
   await c.getByRole("button", { name: "Copy profile link" }).click();
   await c.getByRole("button", { name: "Copied" }).waitFor();
   await shot(c, "profile");
   await c.getByRole("link", { name: "Hire this creator" }).click();
   await c.waitForURL(/\/sponsor\/new\?to=/);
   await c.getByText("riya.qie = 0x7099...79C8").waitFor({ timeout: 30000 });
-  step("5 name link / change / remove / relink, profile score 74, copy, hire-this-creator prefill");
+  step("5 name link / change / remove / relink, profile score 57, copy, hire-this-creator prefill");
 
   // ---------------- #2 paid in QIE, creator declines (two-tap) ----------------
   const id2 = await createCampaign(s, { creator: CREATOR, amount: "1.5", pay: "QIE", brief: "Story about the hackathon." });

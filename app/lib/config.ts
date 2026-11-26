@@ -40,7 +40,7 @@ export const MAINNET = {
 const env = (v: string | undefined) => (v && v.startsWith("0x") ? (v as Address) : undefined);
 
 export const addresses = {
-  paidPost: env(process.env.NEXT_PUBLIC_PAIDPOST),
+  qreach: env(process.env.NEXT_PUBLIC_QREACH),
   qusdc: env(process.env.NEXT_PUBLIC_QUSDC) ?? (isMainnet ? MAINNET.qusdc : undefined),
   qieId: env(process.env.NEXT_PUBLIC_QIEID) ?? (isMainnet ? MAINNET.qieId : undefined),
   // The oracle exists only on mainnet. The app reads it from mainnet on every chain.

@@ -12,7 +12,9 @@ export type Live = {
 
 /** What can happen next, given the on-chain state and the current time. */
 export function nextActions(c: Live, now: number) {
-  return {
+  // Until the chain clock is known (now = 0) nothing is allowed, so no button flashes up.
+  const known = now > 0;
+  const r = {
     canAccept: c.status === "Created" && now <= c.acceptBy,
     canDecline: c.status === "Created",
     canCancel: c.status === "Created",
@@ -23,6 +25,8 @@ export function nextActions(c: Live, now: number) {
       (c.status === "Created" && now > c.acceptBy) || (c.status === "Accepted" && now > c.deliverBy),
     releaseAt: c.submittedAt + c.reviewWindow,
   };
+  if (!known) for (const k of Object.keys(r) as (keyof typeof r)[]) if (k !== "releaseAt") (r[k] as boolean) = false;
+  return r;
 }
 
 /** Status to show in lists: an offer or job whose deadline passed shows as Expired. */

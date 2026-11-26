@@ -27,7 +27,7 @@ export function Header() {
       )}
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
         <Link href="/" className="display wiggle inline-block border-[3px] border-ink bg-yellow px-2.5 py-1 text-xl shadow-[4px_4px_0_var(--ink)]">
-          Paid<span className="text-pink [-webkit-text-stroke:1.5px_var(--ink)]">Post</span>
+          <span className="mr-1 inline-block border-2 border-ink bg-pink px-1">Q</span>REACH
         </Link>
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
           {NAV.map(([href, label]) => (

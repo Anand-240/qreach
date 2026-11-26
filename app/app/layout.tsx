@@ -11,7 +11,7 @@ const body = Space_Grotesk({ variable: "--font-body", subsets: ["latin"] });
 const mono = Space_Mono({ variable: "--font-mono", weight: ["400", "700"], subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "PaidPost",
+  title: "QREACH",
   description: "Hire creators with QUSDC escrow on QIE. Every paid post gets a public on-chain record.",
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#ffe14d" };

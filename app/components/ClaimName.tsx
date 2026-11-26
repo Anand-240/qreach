@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Address } from "viem";
-import { paidPostAbi } from "@/lib/abi";
+import { qreachAbi } from "@/lib/abi";
 import { addresses } from "@/lib/config";
 import { nameOf, parseQieLabel, resolveQie } from "@/lib/qieName";
 import { useTx } from "./useTx";
@@ -19,7 +19,7 @@ export function ClaimName({ address }: { address: Address }) {
   const mine = owner.data && owner.data.toLowerCase() === address.toLowerCase();
 
   async function link(l: string) {
-    if (await tx.send(l ? "Link .qie name" : "Remove .qie name", { address: addresses.paidPost!, abi: paidPostAbi, functionName: "setQieName", args: [l] })) {
+    if (await tx.send(l ? "Link .qie name" : "Remove .qie name", { address: addresses.qreach!, abi: qreachAbi, functionName: "setQieName", args: [l] })) {
       await qc.invalidateQueries({ queryKey: ["name", address.toLowerCase()] });
       setEditing(false);
       setV("");
@@ -37,7 +37,7 @@ export function ClaimName({ address }: { address: Address }) {
       </div>
     );
 
-  let note = "PaidPost checks with QIE ID that your wallet owns the name.";
+  let note = "QREACH checks with QIE ID that your wallet owns the name.";
   if (v && !label) note = "Only letters, numbers and hyphens.";
   else if (label && owner.isLoading) note = "Checking QIE ID...";
   else if (label && owner.data === null) note = `${label}.qie is not registered.`;
@@ -49,7 +49,7 @@ export function ClaimName({ address }: { address: Address }) {
       <label className="label" htmlFor="qie">Show your .qie name instead of 0x...</label>
       <div className="flex flex-col gap-3 sm:flex-row">
         <input id="qie" className="input" placeholder="riya.qie" value={v} onChange={(e) => setV(e.target.value)} autoComplete="off" />
-        <button className="btn btn-blue" disabled={!mine || tx.busy || !addresses.paidPost} onClick={() => link(label!)}>
+        <button className="btn btn-blue" disabled={!mine || tx.busy || !addresses.qreach} onClick={() => link(label!)}>
           Link name
         </button>
         {editing && <button className="btn btn-white" onClick={() => setEditing(false)}>Cancel</button>}

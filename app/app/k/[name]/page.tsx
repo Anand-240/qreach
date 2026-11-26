@@ -3,11 +3,11 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { isAddress, type Address } from "viem";
-import { paidPostAbi } from "@/lib/abi";
+import { qreachAbi } from "@/lib/abi";
 import { addresses, addrUrl } from "@/lib/config";
 import { publicClient } from "@/lib/clients";
 import { nameOf, parseQieLabel, resolveQie } from "@/lib/qieName";
-import { shillScore } from "@/lib/score";
+import { WEIGHTS, shillScore } from "@/lib/score";
 import { byNewest } from "@/lib/indexer";
 import { fmtDate, fmtQusdc } from "@/lib/format";
 import { useIndex } from "@/components/useIndex";
@@ -42,8 +42,8 @@ export default function Profile({ params }: { params: Promise<{ name: string }> 
   const addr = who.data?.addr;
   const stats = useQuery({
     queryKey: ["stats", addr],
-    enabled: !!addr && !!addresses.paidPost,
-    queryFn: () => publicClient.readContract({ address: addresses.paidPost!, abi: paidPostAbi, functionName: "creatorStats", args: [addr!] }),
+    enabled: !!addr && !!addresses.qreach,
+    queryFn: () => publicClient.readContract({ address: addresses.qreach!, abi: qreachAbi, functionName: "creatorStats", args: [addr!] }),
   });
   const idx = useIndex();
 
@@ -61,7 +61,7 @@ export default function Profile({ params }: { params: Promise<{ name: string }> 
   const paid = rows.filter((c) => c.status === "Paid");
   const uniqueSponsors = new Set(paid.map((c) => c.sponsor.toLowerCase())).size;
   const s = stats.data;
-  const score = s ? shillScore({ completed: s.completed, onTime: s.onTime, expired: s.expired, uniqueSponsors }) : null;
+  const score = s ? shillScore({ completed: s.completed, expired: s.expired, uniqueSponsors }) : null;
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
@@ -100,10 +100,9 @@ export default function Profile({ params }: { params: Promise<{ name: string }> 
         <div className="bx space-y-4 p-5">
           {score?.kind === "scored" ? (
             <>
-              <Bar i={0} label="Completion rate" weight={40} value={score.completionRate} />
-              <Bar i={1} label="On time" weight={30} value={score.onTimeRate} />
-              <Bar i={2} label="Experience (paid posts / 10)" weight={20} value={score.experience} />
-              <Bar i={3} label="Sponsor variety (sponsors / 5)" weight={10} value={score.sponsorVariety} />
+              <Bar i={0} label="Delivered (paid posts / all finished jobs)" weight={WEIGHTS.completion} value={score.completionRate} />
+              <Bar i={1} label="Experience (paid posts / 10)" weight={WEIGHTS.experience} value={score.experience} />
+              <Bar i={2} label="Sponsor variety (sponsors / 5)" weight={WEIGHTS.variety} value={score.sponsorVariety} />
             </>
           ) : (
             <p>The score appears after the first paid post or missed deadline.</p>
@@ -116,7 +115,7 @@ export default function Profile({ params }: { params: Promise<{ name: string }> 
               <div><dt className="kicker">Earned</dt><dd className="display text-2xl">{fmtQusdc(s.earned)}</dd></div>
             </dl>
           )}
-          <p className="text-xs">Every input is read from the PaidPost contract. Nobody can edit it.</p>
+          <p className="text-xs">Every input is read from the QREACH contract. Nobody can edit it.</p>
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-/// @notice Minimal QIEDEX (UniswapV2-style) router interface used by PaidPost.
+/// @notice Minimal QIEDEX (UniswapV2-style) router interface used by Qreach.
 interface IQIEDEXRouter {
     function WETH() external view returns (address);
 
@@ -20,13 +20,13 @@ interface IQIEID {
     function domainOwnerByName(string calldata label, string calldata parent) external view returns (address);
 }
 
-/// @title PaidPost
+/// @title Qreach
 /// @notice Escrow for paid creator posts, with a public on-chain record of every paid post.
 ///         A sponsor locks QUSDC for a named creator. The creator accepts, posts, and submits
 ///         the post URL. When the sponsor approves (or stays silent past the review window),
 ///         the creator is paid and a PaidPromotion record is written that anyone can look up.
 /// @dev No owner, no fees, no upgrades. Only QUSDC is accepted.
-contract PaidPost is ReentrancyGuard {
+contract Qreach is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     enum Status {
@@ -54,7 +54,6 @@ contract PaidPost is ReentrancyGuard {
 
     struct Stats {
         uint32 completed;
-        uint32 onTime;
         uint32 expired;
         uint128 earned;
     }
@@ -72,7 +71,12 @@ contract PaidPost is ReentrancyGuard {
 
     uint256 public nextId = 1;
     mapping(uint256 => Campaign) internal _campaigns;
-    mapping(bytes32 => uint256) public campaignOfPost;
+    /// @dev Every campaign a post was submitted to. A post can appear more than once (the contract
+    ///      cannot tell who really wrote it), so nobody can lock a post away from its real creator.
+    mapping(bytes32 => uint256[]) internal _campaignsOfPost;
+    /// @notice Campaign in which `creator` already used a post (0 if never). Stops a creator from
+    ///         being paid twice for one post.
+    mapping(address => mapping(bytes32 => uint256)) public campaignOfCreatorPost;
     mapping(address => Stats) internal _stats;
     /// @notice .qie label (without ".qie") an address has claimed. Re-check ownership when reading,
     ///         because a name can be transferred after it was claimed.
@@ -237,9 +241,10 @@ contract PaidPost is ReentrancyGuard {
         _checkUrl(bytes(url));
 
         bytes32 postHash = keccak256(bytes(url));
-        if (campaignOfPost[postHash] != 0) revert PostAlreadyUsed();
+        if (campaignOfCreatorPost[msg.sender][postHash] != 0) revert PostAlreadyUsed();
 
-        campaignOfPost[postHash] = id;
+        campaignOfCreatorPost[msg.sender][postHash] = id;
+        _campaignsOfPost[postHash].push(id);
         c.postHash = postHash;
         c.submittedAt = uint64(block.timestamp);
         c.status = Status.Submitted;
@@ -307,17 +312,20 @@ contract PaidPost is ReentrancyGuard {
         return _stats[creator];
     }
 
-    /// @notice Look up a post by the hash of its normalised URL.
-    /// @return id 0 if the post is unknown to PaidPost.
-    function disclosureOf(bytes32 postHash)
-        external
-        view
-        returns (uint256 id, address sponsor, address creator, uint256 amount, uint64 paidAt, Status status)
-    {
-        id = campaignOfPost[postHash];
-        if (id == 0) return (0, address(0), address(0), 0, 0, Status.None);
-        Campaign storage c = _campaigns[id];
-        return (id, c.sponsor, c.creator, c.amount, c.paidAt, c.status);
+    /// @notice How many campaigns a post (hash of its normalised URL) was submitted to.
+    function postCampaignCount(bytes32 postHash) external view returns (uint256) {
+        return _campaignsOfPost[postHash].length;
+    }
+
+    /// @notice Campaign ids for a post, oldest first, `start` to `start + max` (clamped).
+    function campaignsOfPost(bytes32 postHash, uint256 start, uint256 max) external view returns (uint256[] memory ids) {
+        uint256[] storage all = _campaignsOfPost[postHash];
+        if (start >= all.length) return new uint256[](0);
+        uint256 end = start + max > all.length ? all.length : start + max;
+        ids = new uint256[](end - start);
+        for (uint256 i = start; i < end; i++) {
+            ids[i - start] = all[i];
+        }
     }
 
     // ------------------------------------------------------------------
@@ -366,7 +374,6 @@ contract PaidPost is ReentrancyGuard {
         c.paidAt = uint64(block.timestamp);
         Stats storage s = _stats[c.creator];
         s.completed += 1;
-        if (c.submittedAt <= c.deliverBy) s.onTime += 1;
         s.earned += c.amount;
         emit PaidPromotion(id, c.sponsor, c.creator, c.amount, c.postHash, c.paidAt, auto_);
         qusdc.safeTransfer(c.creator, c.amount);

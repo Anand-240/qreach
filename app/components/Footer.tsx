@@ -2,12 +2,12 @@ import Link from "next/link";
 import { addresses, addrUrl, chain } from "@/lib/config";
 
 export function Footer() {
-  const pp = addresses.paidPost;
+  const pp = addresses.qreach;
   const url = pp ? addrUrl(pp) : undefined;
   return (
     <footer className="mt-10 border-t-[3px] border-ink bg-ink text-paper">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-sm">
-        <span className="display text-lg text-yellow">PaidPost</span>
+        <span className="display text-lg text-yellow">QREACH</span>
         <span className="mono text-xs">No owner. No fees. MIT.</span>
         <span className="mono text-xs">Network: {chain.name}</span>
         {pp && (

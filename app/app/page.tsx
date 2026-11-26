@@ -17,7 +17,7 @@ const STEPS = [
   {
     n: "02",
     h: "Post",
-    b: "The creator accepts, publishes, and submits the link. One post can back one campaign only. Miss the deadline and the sponsor gets the money back.",
+    b: "The creator accepts, publishes, and submits the link. A creator can use a post for one campaign only. Miss the deadline and the sponsor gets the money back.",
     bg: "bg-lilac",
   },
   {
@@ -52,7 +52,7 @@ export default function Home() {
             post <span className="bg-pink px-2 [box-decoration-break:clone]">paid?</span>
           </h1>
           <p className="rise max-w-xl text-lg" style={{ "--i": 2 } as React.CSSProperties}>
-            Paste any post link. If a sponsor paid for it through PaidPost, you see who paid, how much and when. Read
+            Paste any post link. If a sponsor paid for it through QREACH, you see who paid, how much and when. Read
             straight from the chain.
           </p>
           <div className="rise max-w-2xl" style={{ "--i": 3 } as React.CSSProperties}>
@@ -104,13 +104,13 @@ export default function Home() {
           {stats.map(([label, val, bg], i) => (
             <div key={label} className={`bx rise p-5 ${bg}`} style={{ "--i": i } as React.CSSProperties}>
               <div className="display text-4xl tabular-nums sm:text-5xl">
-                {!addresses.paidPost ? "-" : isLoading ? <span className="blink">_</span> : isError ? "!" : String(val)}
+                {!addresses.qreach ? "-" : isLoading ? <span className="blink">_</span> : isError ? "!" : String(val)}
               </div>
               <div className="kicker mt-2">{label}</div>
             </div>
           ))}
         </div>
-        <p className="mono text-xs">Counted live from PaidPost contract events. No database.</p>
+        <p className="mono text-xs">Counted live from QREACH contract events. No database.</p>
       </section>
 
       {/* How it works */}

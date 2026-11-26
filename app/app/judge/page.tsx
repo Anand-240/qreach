@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { erc20Abi, formatEther } from "viem";
 import { useConnectors } from "wagmi";
-import { paidPostAbi } from "@/lib/abi";
+import { qreachAbi } from "@/lib/abi";
 import { addresses, addrUrl, chain, DEPLOY_BLOCK, isMainnet, MAINNET } from "@/lib/config";
 import { publicClient } from "@/lib/clients";
 import { qieNeededFor, qiePrice } from "@/lib/oracle";
@@ -23,7 +23,7 @@ const TEST_CMDS = [
 ].join("\n");
 
 export default function Judge() {
-  const pp = addresses.paidPost;
+  const pp = addresses.qreach;
   const idx = useIndex();
   const t = idx.data ? totals(idx.data) : null;
   const connectors = useConnectors();
@@ -33,7 +33,7 @@ export default function Judge() {
     queryFn: async () => {
       const [qusdc, router, qieId] = await Promise.all(
         (["qusdc", "router", "qieId"] as const).map((f) =>
-          publicClient.readContract({ address: pp!, abi: paidPostAbi, functionName: f }),
+          publicClient.readContract({ address: pp!, abi: qreachAbi, functionName: f }),
         ),
       );
       const [symbol, names, price, quote] = await Promise.all([
@@ -78,7 +78,7 @@ export default function Judge() {
     ],
     [
       "QIE ID (.qie)",
-      "Pick a creator by name. Creators link their name on chain; PaidPost checks ownership with domainOwnerByName.",
+      "Pick a creator by name. Creators link their name on chain; QREACH checks ownership with domainOwnerByName.",
       p ? (p.names !== null ? `${p.names.toString()} names in the registry` : `Registry ${p.qieId.slice(0, 10)}...`) : "...",
     ],
     [
@@ -100,7 +100,7 @@ export default function Judge() {
     <div className="space-y-10">
       <div className="space-y-3">
         <p className="kicker">For judges</p>
-        <h1 className="h1">PaidPost in 60 seconds</h1>
+        <h1 className="h1">QREACH in 60 seconds</h1>
         <p className="max-w-2xl text-lg">
           A creator escrow with a public disclosure record. Everything on this page is read live from {chain.name}.
         </p>
@@ -110,7 +110,7 @@ export default function Judge() {
         <h2 className="display text-2xl">Contract</h2>
         {pp ? (
           <p className="break-all">
-            <span className="kicker mr-2">PaidPost</span>
+            <span className="kicker mr-2">QREACH</span>
             {addrUrl(pp) ? (
               <a className="link mono font-bold" href={addrUrl(pp)} target="_blank" rel="noreferrer">{pp}</a>
             ) : (
@@ -127,7 +127,7 @@ export default function Judge() {
           ))}
         </div>
         <p className="text-sm">
-          Source: contracts/src/PaidPost.sol
+          Source: contracts/src/Qreach.sol
           {REPO && (
             <>
               {" "}in <a className="link" href={REPO} target="_blank" rel="noreferrer">the repository</a>

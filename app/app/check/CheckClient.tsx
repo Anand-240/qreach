@@ -8,7 +8,7 @@ import { CheckBox } from "@/components/CheckBox";
 import { Who } from "@/components/Who";
 import { normalizeUrl } from "@/lib/normalizeUrl";
 import { publicClient } from "@/lib/clients";
-import { paidPostAbi } from "@/lib/abi";
+import { qreachAbi } from "@/lib/abi";
 import { addresses, txUrl } from "@/lib/config";
 import { fmtDate, fmtQusdc } from "@/lib/format";
 import { loadIndex } from "@/lib/indexer";
@@ -41,19 +41,27 @@ export default function CheckClient() {
 
   const q = useQuery({
     queryKey: ["disclosure", hash],
-    enabled: !!hash && !!addresses.paidPost,
+    enabled: !!hash && !!addresses.qreach,
     queryFn: async () => {
-      const [id, sponsor, creator, amount, paidAt, status] = await publicClient.readContract({
-        address: addresses.paidPost!,
-        abi: paidPostAbi,
-        functionName: "disclosureOf",
-        args: [hash!],
-      });
-      const row = id > 0n ? (await loadIndex()).campaigns.get(String(id)) : undefined;
-      return { id, sponsor, creator, amount, paidAt: Number(paidAt), status: STATUS_BY_INDEX[status], row };
+      const pp = addresses.qreach!;
+      const count = await publicClient.readContract({ address: pp, abi: qreachAbi, functionName: "postCampaignCount", args: [hash!] });
+      // Newest 20 records are enough for a person to judge; the count shows the rest exist.
+      const start = count > 20n ? count - 20n : 0n;
+      const ids = await publicClient.readContract({ address: pp, abi: qreachAbi, functionName: "campaignsOfPost", args: [hash!, start, 20n] });
+      const idx = ids.length ? await loadIndex() : undefined;
+      const records = await Promise.all(
+        [...ids].reverse().map(async (id) => {
+          const c = await publicClient.readContract({ address: pp, abi: qreachAbi, functionName: "getCampaign", args: [id] });
+          return { id, ...c, status: STATUS_BY_INDEX[c.status], row: idx?.campaigns.get(String(id)) };
+        }),
+      );
+      return { count, records };
     },
   });
-  const d = q.data;
+  const records = q.data?.records ?? [];
+  const paid = records.filter((r) => r.status === "Paid");
+  const pending = records.filter((r) => r.status === "Submitted");
+  const creators = new Set(records.map((r) => r.creator.toLowerCase()));
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -73,7 +81,7 @@ export default function CheckClient() {
           Looked up as: <b>{norm.url}</b>
         </p>
       )}
-      {!addresses.paidPost && hash && <div className="bx bg-yellow p-4 font-bold">The contract address is not configured.</div>}
+      {!addresses.qreach && hash && <div className="bx bg-yellow p-4 font-bold">The contract address is not configured.</div>}
       {q.isLoading && (
         <div className="bx flex items-center gap-3 p-6 font-bold">
           <span className="spinner" /> Reading the chain...
@@ -86,19 +94,28 @@ export default function CheckClient() {
         </div>
       )}
 
-      {d && d.status === "Paid" && (
-        <div className="bx rise relative bg-yellow p-6 sm:p-8">
-          <span className="stamp display absolute -top-7 right-4 border-[5px] border-red bg-white px-4 py-1 text-4xl text-red sm:text-5xl">
-            Paid
-          </span>
+      {q.data && creators.size > 1 && (
+        <div className="bx rise bg-red p-5 font-bold text-white">
+          Warning: {creators.size} different creators submitted this post. Only one of them made it. Check which account
+          actually published it before you trust a record.
+        </div>
+      )}
+
+      {paid.map((d, i) => (
+        <div key={String(d.id)} className="bx rise relative bg-yellow p-6 sm:p-8" style={{ "--i": i } as React.CSSProperties}>
+          {i === 0 && (
+            <span className="stamp display absolute -top-7 right-4 border-[5px] border-red bg-white px-4 py-1 text-4xl text-red sm:text-5xl">
+              Paid
+            </span>
+          )}
           <div className="kicker">Paid promotion</div>
           <p className="mt-4 text-2xl leading-snug sm:text-3xl">
             <Who addr={d.creator} /> was paid <b className="display">{fmtQusdc(d.amount)} QUSDC</b> by <Who addr={d.sponsor} /> for
             this post.
           </p>
           <p className="mono mt-3 text-sm">
-            Paid {fmtDate(d.paidAt)}
-            {d.row?.autoReleased ? " / released automatically after the review time" : " / approved by the sponsor"}
+            Paid {fmtDate(Number(d.paidAt))}
+            {d.row?.autoReleased ? " / released automatically after the review time" : d.row ? " / approved by the sponsor" : ""}
           </p>
           {d.row?.brief && (
             <blockquote className="mt-5 border-l-[6px] border-ink bg-white p-3">
@@ -111,28 +128,33 @@ export default function CheckClient() {
             {d.row?.tx.paid && txUrl(d.row.tx.paid) && (
               <a className="btn btn-sm btn-white" href={txUrl(d.row.tx.paid)} target="_blank" rel="noreferrer">Payment on explorer</a>
             )}
-            <CopyLink />
+            {i === 0 && <CopyLink />}
           </div>
         </div>
-      )}
+      ))}
 
-      {d && d.status === "Submitted" && (
-        <div className="bx rise bg-sky p-6 sm:p-8">
+      {pending.map((d, i) => (
+        <div key={String(d.id)} className="bx rise bg-sky p-6 sm:p-8" style={{ "--i": i } as React.CSSProperties}>
           <div className="kicker">Paid deal / payment pending</div>
           <p className="mt-4 text-2xl">
-            This post was submitted for a paid campaign by <Who addr={d.sponsor} />. {fmtQusdc(d.amount)} QUSDC is still in escrow.
+            <Who addr={d.creator} /> submitted this post for a paid campaign by <Who addr={d.sponsor} />. {fmtQusdc(d.amount)} QUSDC
+            is still in escrow.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link className="btn btn-sm btn-white" href={`/c/${d.id}`}>Campaign #{String(d.id)}</Link>
-            <CopyLink />
+            {paid.length === 0 && i === 0 && <CopyLink />}
           </div>
         </div>
+      ))}
+
+      {q.data && q.data.count > BigInt(records.length) && (
+        <p className="mono text-xs">Showing the newest {records.length} of {String(q.data.count)} records for this post.</p>
       )}
 
-      {d && d.id === 0n && (
+      {q.data && q.data.count === 0n && (
         <div className="bx rise bg-white p-6 sm:p-8">
-          <div className="kicker">No PaidPost record</div>
-          <p className="mt-4 text-2xl">This post was not paid through PaidPost.</p>
+          <div className="kicker">No QREACH record</div>
+          <p className="mt-4 text-2xl">This post was not paid through QREACH.</p>
           <p className="mt-2">That does not prove it is unpaid: deals made elsewhere leave no record here.</p>
         </div>
       )}
@@ -142,7 +164,7 @@ export default function CheckClient() {
           {[
             ["Paid", "A sponsor paid the creator for this exact post. You see who, how much and when.", "bg-yellow"],
             ["Pending", "The post is part of a paid deal and the money is still in escrow.", "bg-sky"],
-            ["No record", "Nothing was paid for this post through PaidPost.", "bg-white"],
+            ["No record", "Nothing was paid for this post through QREACH.", "bg-white"],
           ].map(([h, b, bg], i) => (
             <div key={h} className={`bx rise p-5 ${bg}`} style={{ "--i": i } as React.CSSProperties}>
               <div className="display text-xl">{h}</div>

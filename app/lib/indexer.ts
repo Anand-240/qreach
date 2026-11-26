@@ -1,5 +1,5 @@
 import { parseEventLogs, type Address, type Hash, type Log } from "viem";
-import { paidPostAbi } from "./abi";
+import { qreachAbi } from "./abi";
 import { addresses, DEPLOY_BLOCK, LOG_SPAN } from "./config";
 import { publicClient } from "./clients";
 
@@ -25,7 +25,12 @@ export type CampaignRow = {
 export type Index = {
   campaigns: Map<string, CampaignRow>;
   toBlock: bigint;
+  /** "txHash:logIndex" of every applied log, so re-scanned blocks are never applied twice. */
+  seen: Set<string>;
 };
+
+/** Blocks re-read on every refresh, in case the RPC served logs late. */
+const OVERLAP = 20n;
 
 let cache: Index | null = null;
 let inflight: Promise<Index> | null = null;
@@ -38,7 +43,7 @@ async function fetchLogs(from: bigint, to: bigint): Promise<Log[]> {
   for (let i = 0; i < ranges.length; i += CONCURRENCY) {
     const batch = await Promise.all(
       ranges.slice(i, i + CONCURRENCY).map(([a, b]) =>
-        publicClient.getLogs({ address: addresses.paidPost!, fromBlock: a, toBlock: b }),
+        publicClient.getLogs({ address: addresses.qreach!, fromBlock: a, toBlock: b }),
       ),
     );
     for (const b of batch) out.push(...b);
@@ -47,7 +52,13 @@ async function fetchLogs(from: bigint, to: bigint): Promise<Log[]> {
 }
 
 function apply(idx: Index, logs: Log[]) {
-  const events = parseEventLogs({ abi: paidPostAbi, logs });
+  const fresh = logs.filter((l) => {
+    const k = `${l.transactionHash}:${l.logIndex}`;
+    if (idx.seen.has(k)) return false;
+    idx.seen.add(k);
+    return true;
+  });
+  const events = parseEventLogs({ abi: qreachAbi, logs: fresh });
   for (const ev of events) {
     const tx = ev.transactionHash as Hash;
     const args = ev.args as Record<string, unknown>;
@@ -102,25 +113,33 @@ function apply(idx: Index, logs: Log[]) {
   }
 }
 
-/** Every PaidPost campaign, rebuilt from chain logs. Incremental after the first call. */
-export async function loadIndex(): Promise<Index> {
-  if (!addresses.paidPost) return { campaigns: new Map(), toBlock: 0n };
-  if (inflight) return inflight;
+/**
+ * Every QREACH campaign, rebuilt from chain logs. Incremental after the first call.
+ * Pass `minBlock` (a receipt's block) to make sure the result includes that block.
+ */
+export async function loadIndex(minBlock?: bigint): Promise<Index> {
+  if (!addresses.qreach) return { campaigns: new Map(), toBlock: 0n, seen: new Set() };
+  if (inflight) {
+    const r = await inflight;
+    if (minBlock === undefined || r.toBlock >= minBlock) return r;
+  }
   inflight = (async () => {
-    const head = await publicClient.getBlockNumber();
-    const idx = cache ?? { campaigns: new Map(), toBlock: DEPLOY_BLOCK - 1n };
-    if (head > idx.toBlock) {
-      const logs = await fetchLogs(idx.toBlock + 1n, head);
+    const head = await publicClient.getBlockNumber({ cacheTime: 0 });
+    const idx = cache ?? { campaigns: new Map(), toBlock: DEPLOY_BLOCK - 1n, seen: new Set<string>() };
+    const from = idx.toBlock + 1n - OVERLAP > DEPLOY_BLOCK ? idx.toBlock + 1n - OVERLAP : DEPLOY_BLOCK;
+    if (head >= from) {
+      const logs = await fetchLogs(from, head);
       logs.sort((x, y) =>
         x.blockNumber === y.blockNumber
           ? Number(x.logIndex) - Number(y.logIndex)
           : Number(x.blockNumber! - y.blockNumber!),
       );
       apply(idx, logs);
-      idx.toBlock = head;
+      if (head > idx.toBlock) idx.toBlock = head;
     }
     cache = idx;
-    return idx;
+    // A new wrapper each time so React Query sees a change and re-renders.
+    return { ...idx, campaigns: new Map(idx.campaigns) };
   })().finally(() => (inflight = null));
   return inflight;
 }

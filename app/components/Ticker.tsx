@@ -7,7 +7,7 @@ import { addresses } from "@/lib/config";
 /** A live strip of real numbers from the contract. Hidden until there is data. */
 export function Ticker() {
   const { data } = useIndex();
-  if (!addresses.paidPost || !data) return <div className="h-[39px] border-b-[3px] border-ink bg-pink" aria-hidden />;
+  if (!addresses.qreach || !data) return <div className="h-[39px] border-b-[3px] border-ink bg-pink" aria-hidden />;
   const t = totals(data);
   const recent = [...data.campaigns.values()].filter((c) => c.status === "Paid").sort(byNewest).slice(0, 5);
   const items = [

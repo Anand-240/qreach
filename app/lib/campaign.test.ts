@@ -27,6 +27,10 @@ describe("nextActions mirrors the contract rules", () => {
       expect(Object.entries(a).filter(([k, v]) => k !== "releaseAt" && v)).toEqual([]);
     }
   });
+  it("nothing is allowed before the chain clock is known", () => {
+    const a = nextActions({ ...base, status: "Created" }, 0);
+    expect(a.canAccept || a.canDecline || a.canCancel || a.canRefundExpired).toBe(false);
+  });
   it("shownStatus marks expired", () => {
     expect(shownStatus({ ...base, status: "Created" }, 101)).toBe("Expired");
     expect(shownStatus({ ...base, status: "Accepted" }, 150)).toBe("Accepted");

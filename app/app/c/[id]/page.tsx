@@ -3,13 +3,13 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { useAccount, useReadContract } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
-import { paidPostAbi } from "@/lib/abi";
+import { qreachAbi } from "@/lib/abi";
 import { addresses, txUrl } from "@/lib/config";
 import { STATUS_BY_INDEX, nextActions, shownStatus } from "@/lib/campaign";
 import { fmtDate, fmtLeft, fmtQusdc } from "@/lib/format";
 import { normalizeUrl } from "@/lib/normalizeUrl";
 import type { Status } from "@/lib/indexer";
-import { useIndex } from "@/components/useIndex";
+import { useIndex, useRefreshIndex } from "@/components/useIndex";
 import { useTx } from "@/components/useTx";
 import { TxStatus } from "@/components/TxStatus";
 import { Who } from "@/components/Who";
@@ -25,22 +25,23 @@ export default function CampaignPage({ params }: { params: Promise<{ id: string 
   const { address } = useAccount();
   const qc = useQueryClient();
   const idx = useIndex();
+  const refreshIndex = useRefreshIndex();
   const tx = useTx();
   const [url, setUrl] = useState("");
   const [confirm, setConfirm] = useState<string | null>(null);
   const now = useChainNow();
 
   const live = useReadContract({
-    address: addresses.paidPost,
-    abi: paidPostAbi,
+    address: addresses.qreach,
+    abi: qreachAbi,
     functionName: "getCampaign",
     args: [id],
-    query: { enabled: !!addresses.paidPost && id > 0n, refetchInterval: 15_000 },
+    query: { enabled: !!addresses.qreach && id > 0n, refetchInterval: 15_000 },
   });
   const c = live.data;
   const row = idx.data?.campaigns.get(String(id));
 
-  if (!addresses.paidPost) return <div className="bx bg-yellow p-6 font-bold">The contract address is not configured.</div>;
+  if (!addresses.qreach) return <div className="bx bg-yellow p-6 font-bold">The contract address is not configured.</div>;
   if (live.isLoading || (id > 0n && !c && !live.isError))
     return <div className="bx flex items-center gap-3 p-6 font-bold"><span className="spinner" /> Loading campaign #{idStr}...</div>;
   if (live.isError)
@@ -65,10 +66,9 @@ export default function CampaignPage({ params }: { params: Promise<{ id: string 
 
   async function act(label: string, functionName: string, args: readonly unknown[]) {
     setConfirm(null);
-    const r = await tx.send(label, { address: addresses.paidPost!, abi: paidPostAbi, functionName, args });
+    const r = await tx.send(label, { address: addresses.qreach!, abi: qreachAbi, functionName, args });
     if (r) {
-      await live.refetch();
-      qc.invalidateQueries({ queryKey: ["index"] });
+      await Promise.all([live.refetch(), refreshIndex(r.blockNumber)]);
       qc.invalidateQueries({ queryKey: ["chainClockOffset"] });
     }
   }

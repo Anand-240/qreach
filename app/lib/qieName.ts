@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 import { addresses } from "./config";
 import { publicClient } from "./clients";
-import { paidPostAbi } from "./abi";
+import { qreachAbi } from "./abi";
 
 const qieIdAbi = [
   {
@@ -41,13 +41,13 @@ export async function resolveQie(label: string): Promise<Address | null> {
 }
 
 /**
- * The .qie name an address has claimed in PaidPost, re-checked against QIE ID right now.
+ * The .qie name an address has claimed in QREACH, re-checked against QIE ID right now.
  * Returns null if none, or if the name has since moved to another owner.
  */
 export async function nameOf(addr: Address): Promise<string | null> {
-  if (!addresses.paidPost) return null;
+  if (!addresses.qreach) return null;
   const label = await publicClient
-    .readContract({ address: addresses.paidPost, abi: paidPostAbi, functionName: "qieLabelOf", args: [addr] })
+    .readContract({ address: addresses.qreach, abi: qreachAbi, functionName: "qieLabelOf", args: [addr] })
     .catch(() => "");
   if (!label) return null;
   const owner = await resolveQie(label);

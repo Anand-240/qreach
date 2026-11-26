@@ -1,4 +1,4 @@
-# PaidPost
+# QREACH
 
 Hire creators with escrow, and let anyone check if a post was paid. Built on QIE mainnet for QIE Hackathon 3.0 (Consumer Apps & Social).
 
@@ -19,7 +19,7 @@ Next.js 15 + wagmi/viem. No backend: every number comes from contract reads and 
 
 ```sh
 cd app
-cp .env.example .env.local   # fill in the PaidPost address and deploy block
+cp .env.example .env.local   # fill in the QREACH address and deploy block
 npm install
 npm run dev
 npx vitest run               # URL normaliser, Shill Score, campaign state rules
@@ -36,10 +36,14 @@ creator links a .qie name, profile shows the score, sponsor creates a second cam
 
 ```sh
 anvil &                                   # terminal 1
-bash app/e2e/reset.sh                     # deploys PaidPost + mocks, registers riya.qie
+bash app/e2e/reset.sh                     # deploys QREACH + mocks, registers riya.qie
 # app/.env.local: CHAIN_ID=31337 and the addresses reset.sh prints (see e2e/flow.mjs header)
 cd app && npm run dev -- -p 3210          # terminal 2
-npm i -D playwright && npx playwright install chromium && RUN=1 node e2e/flow.mjs
+npm i -D playwright && npx playwright install chromium
+RUN=1 node e2e/flow.mjs          # every button on the happy and refund paths
+bash e2e/reset.sh && RUN=2 node e2e/edge-cases.mjs   # wrong network, wallet rejection, validation,
+                                  # post squatting, missed deadline, QIE leftover, 25k-block indexing,
+                                  # and contract balance == open escrow
 ```
 
 ## Deploy
@@ -61,13 +65,18 @@ forge script script/Deploy.s.sol --rpc-url qie_mainnet --broadcast --account dep
 | QIE ID (.qie) | contract + app | `setQieName` checks `domainOwnerByName(label, "qie")`; app resolves names to addresses |
 | QIE Oracle | app | QIE/USD price next to the pay-with-QIE quote |
 
-All five were checked against QIE mainnet with fork tests (`test/PaidPost.fork.t.sol`) on 2026-11-26.
+All five were checked against QIE mainnet with fork tests (`test/Qreach.fork.t.sol`) on 2026-11-26.
 
 ## Known limits
 
 - The contract cannot see the post. It stores the link the creator submits; the sponsor checks it.
 - If the sponsor does nothing during the review window, the creator can be paid automatically.
 - There is no dispute process.
+- The contract cannot tell who wrote a post, so the same post can be submitted by more than one
+  creator. Nobody can block the real creator this way, and /check shows every record for a post
+  with a warning when more than one creator claimed it. One creator cannot use one post twice.
+- The Shill Score can be inflated with a second wallet acting as a sponsor. It counts only what
+  happened on chain: 50 x delivered rate + 30 x experience + 20 x sponsor variety.
 - A .qie name has no reverse record in QIE ID, so creators link their name once with `setQieName`.
   The app re-checks ownership every time it shows a name.
 

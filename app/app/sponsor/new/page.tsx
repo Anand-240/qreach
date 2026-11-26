@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAccount, useReadContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { erc20Abi, formatEther, isAddress, parseEventLogs, parseUnits, type Address } from "viem";
-import { paidPostAbi, mockQusdcAbi } from "@/lib/abi";
+import { qreachAbi, mockQusdcAbi } from "@/lib/abi";
 import { addresses, isMainnet } from "@/lib/config";
 import { parseQieLabel, resolveQie, shortAddr } from "@/lib/qieName";
 import { qieNeededFor, qiePrice } from "@/lib/oracle";
@@ -14,6 +14,7 @@ import { useTx } from "@/components/useTx";
 import { TxStatus } from "@/components/TxStatus";
 import { Connect } from "@/components/Connect";
 import { useChainNow } from "@/components/useChainNow";
+import { useRefreshIndex } from "@/components/useIndex";
 
 const DAY = 86400;
 const mockRouterAbi = [
@@ -46,6 +47,7 @@ export default function NewCampaign() {
   const [brief, setBrief] = useState("");
   const tx = useTx();
   const now = useChainNow();
+  const refreshIndex = useRefreshIndex();
   // Prefill from a profile's "Hire this creator" link (/sponsor/new?to=riya.qie).
   useEffect(() => {
     const to = new URLSearchParams(window.location.search).get("to");
@@ -63,7 +65,7 @@ export default function NewCampaign() {
   const acceptBy = now + acceptDays * DAY;
   const deliverBy = now + deliverDays * DAY;
 
-  const pp = addresses.paidPost;
+  const pp = addresses.qreach;
   const qusdc = addresses.qusdc;
   const bal = useReadContract({
     address: qusdc,
@@ -85,7 +87,7 @@ export default function NewCampaign() {
     enabled: pay === "QIE" && amount > 0n && !!pp,
     queryFn: async () => {
       if (isMainnet) return qieNeededFor(amount);
-      const r = await publicClient.readContract({ address: pp!, abi: paidPostAbi, functionName: "router" });
+      const r = await publicClient.readContract({ address: pp!, abi: qreachAbi, functionName: "router" });
       const w = await publicClient.readContract({ address: r, abi: mockRouterAbi, functionName: "weiPerUnit" });
       return amount * w;
     },
@@ -116,19 +118,20 @@ export default function NewCampaign() {
         if (!ok) return;
         await allowance.refetch();
       }
-      receipt = await tx.send("Lock QUSDC", { address: pp, abi: paidPostAbi, functionName: "createCampaign", args: [...common] });
+      receipt = await tx.send("Lock QUSDC", { address: pp, abi: qreachAbi, functionName: "createCampaign", args: [...common] });
     } else {
       receipt = await tx.send("Pay with QIE", {
         address: pp,
-        abi: paidPostAbi,
+        abi: qreachAbi,
         functionName: "createCampaignWithQIE",
         args: [...common, BigInt(now + 900)],
         value: qieValue!,
       });
     }
     if (receipt) {
-      const ev = parseEventLogs({ abi: paidPostAbi, logs: receipt.logs, eventName: "CampaignCreated" })[0];
+      const ev = parseEventLogs({ abi: qreachAbi, logs: receipt.logs, eventName: "CampaignCreated" })[0];
       bal.refetch();
+      await refreshIndex(receipt.blockNumber);
       if (ev) router.push(`/c/${ev.args.id}`);
     }
   }

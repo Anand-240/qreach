@@ -2,19 +2,19 @@
 pragma solidity 0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {PaidPost} from "../src/PaidPost.sol";
+import {Qreach} from "../src/Qreach.sol";
 import {MockQUSDC, MockRouter, MockQIEID} from "./mocks/Mocks.sol";
 
 /// @notice Random sequences of actions by one sponsor and one creator.
 contract Handler is Test {
-    PaidPost public pp;
+    Qreach public pp;
     MockQUSDC public usdc;
     address public sponsor = makeAddr("sponsor");
     address public creator = makeAddr("creator");
     uint256[] public ids;
     uint256 public postNonce;
 
-    constructor(PaidPost pp_, MockQUSDC usdc_) {
+    constructor(Qreach pp_, MockQUSDC usdc_) {
         pp = pp_;
         usdc = usdc_;
         usdc.mint(sponsor, 1e15);
@@ -68,15 +68,15 @@ contract Handler is Test {
     }
 }
 
-contract PaidPostInvariantTest is Test {
-    PaidPost pp;
+contract QreachInvariantTest is Test {
+    Qreach pp;
     MockQUSDC usdc;
     Handler h;
 
     function setUp() public {
         usdc = new MockQUSDC();
         MockRouter router = new MockRouter(usdc, 1e9);
-        pp = new PaidPost(address(usdc), address(router), address(new MockQIEID()));
+        pp = new Qreach(address(usdc), address(router), address(new MockQIEID()));
         h = new Handler(pp, usdc);
         targetContract(address(h));
     }
@@ -86,10 +86,10 @@ contract PaidPostInvariantTest is Test {
         uint256 open;
         uint256 n = h.count();
         for (uint256 i; i < n; i++) {
-            PaidPost.Campaign memory c = pp.getCampaign(h.ids(i));
+            Qreach.Campaign memory c = pp.getCampaign(h.ids(i));
             if (
-                c.status == PaidPost.Status.Created || c.status == PaidPost.Status.Accepted
-                    || c.status == PaidPost.Status.Submitted
+                c.status == Qreach.Status.Created || c.status == Qreach.Status.Accepted
+                    || c.status == Qreach.Status.Submitted
             ) open += c.amount;
         }
         assertEq(usdc.balanceOf(address(pp)), open);
