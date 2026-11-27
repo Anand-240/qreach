@@ -187,3 +187,10 @@ Chain id 1990. All four dependencies and the oracle have bytecode, and none is a
 - Balance 0.05 QIE, nonce 0. Simulation from this sender: `preflight ok`, 1 CREATE, value 0, predicted `0xecf00C31f73296A1EFa9Fe4D3514813D93807740` (matches the earlier simulation, as expected for nonce 0). Gas limit 2,935,961; forge estimate 0.00587 QIE.
 - The deploy calldata equals the compiled `Qreach` creation code plus constructor args, byte for byte.
 - `foundry-pp/DeployHelper51.sol` stale-artifact warning: a temporary file of forge's `dynamic_test_linking` preprocessor. No `out/` artifact or cache entry references it, and it has no effect on the deployed bytecode (calldata check above).
+
+## 10. Mainnet deployment (2026-11-28)
+
+Deployed with owner authorization from `Anand-240/qreach` @ `6c914c9`: `0xecf00C31f73296A1EFa9Fe4D3514813D93807740`, tx `0xb11a9e9087558fe70dd74119fc85de57e902a8bb9448ef87d5833666130b930f`, block 12216479,
+gas 2,257,776 (0.002258 QIE). Receipt success. On-chain runtime code equals the compiled bytecode
+(differences only in immutable slots, which equal the constructor addresses). Source verified on
+Blockscout. **Still open:** frontend hosting, and a real two-wallet transaction flow (none run yet).

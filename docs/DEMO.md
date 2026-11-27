@@ -20,7 +20,7 @@ Keep a second browser profile signed in as B.
 
 | Step | Tx hash | Explorer link |
 |---|---|---|
-| Deploy QREACH | | |
+| Deploy QREACH | `0xb11a9e9087558fe70dd74119fc85de57e902a8bb9448ef87d5833666130b930f` | https://mainnet.qie.digital/tx/0xb11a9e9087558fe70dd74119fc85de57e902a8bb9448ef87d5833666130b930f |
 | Approve QUSDC | | |
 | createCampaign | | |
 | accept | | |

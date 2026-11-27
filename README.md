@@ -7,8 +7,8 @@ Hire creators with escrow, and let anyone check if a post was paid. Built on QIE
 - Tested locally: contract unit, fuzz and invariant tests; app unit tests; browser end-to-end suites on a local chain.
 - Tested against a QIE mainnet fork: real QUSDC, QIEDEX, QIE ID and oracle.
 - Simulated on mainnet: deployment dry run passes its dependency checks.
-- **Not yet deployed to mainnet. No live URL yet. No real two-wallet mainnet flow yet.** The deployment
-  section below will hold real addresses and links once they exist.
+- **Deployed to QIE mainnet (2026-11-28) and source-verified on the explorer.** Contract reads checked on chain.
+- **Not done yet:** public frontend URL, and a real two-wallet transaction flow on mainnet.
 
 ## Problem
 
@@ -82,9 +82,10 @@ How to deploy: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 | | |
 |---|---|
 | Network | QIE Mainnet, chain 1990 |
-| QREACH contract | not deployed yet |
-| Live demo | not deployed yet |
-| Example transactions | not available yet |
+| QREACH contract | [`0xecf00C31f73296A1EFa9Fe4D3514813D93807740`](https://mainnet.qie.digital/address/0xecf00C31f73296A1EFa9Fe4D3514813D93807740) (verified source) |
+| Deployment tx | [`0xb11a9e90…`](https://mainnet.qie.digital/tx/0xb11a9e9087558fe70dd74119fc85de57e902a8bb9448ef87d5833666130b930f), block 12216479 |
+| Live demo | not hosted yet |
+| Example transactions | not available yet (two-wallet flow pending) |
 
 ## Known limits
 

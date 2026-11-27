@@ -1,7 +1,24 @@
 # Deploying QREACH
 
-Nothing in this file has been broadcast yet. Each step marked **(sends a transaction)** needs the
-owner's explicit approval first.
+Each step marked **(sends a transaction)** needs the owner's explicit approval first.
+
+## Deployed (QIE mainnet, 2026-11-28)
+
+| | Value |
+|---|---|
+| QREACH | [`0xecf00C31f73296A1EFa9Fe4D3514813D93807740`](https://mainnet.qie.digital/address/0xecf00C31f73296A1EFa9Fe4D3514813D93807740) |
+| Deployment tx | [`0xb11a9e9087558fe70dd74119fc85de57e902a8bb9448ef87d5833666130b930f`](https://mainnet.qie.digital/tx/0xb11a9e9087558fe70dd74119fc85de57e902a8bb9448ef87d5833666130b930f) |
+| Block | 12216479 (use as `NEXT_PUBLIC_DEPLOY_BLOCK`) |
+| Deployer | `0x17be41a4b30AF4C31a6D763139425af1adee1B45` (nonce 0) |
+| Gas | 2,257,776 at 1.000000001 gwei = 0.002257776 QIE |
+| Source | `Anand-240/qreach` @ `6c914c9`; record in `contracts/broadcast/Deploy.s.sol/1990/run-latest.json` |
+| Explorer verification | Blockscout: verified (solc 0.8.24, optimizer 200, `src/Qreach.sol`) |
+
+Checked independently after the broadcast: receipt status success; runtime code equals the compiled
+`Qreach` deployed bytecode, apart from its immutable slots, which hold exactly the three constructor
+addresses; `qusdc()`, `router()` and `qieId()` return the expected addresses; `nextId()` = 1;
+`MIN_AMOUNT()` = 500000; `owner()` reverts (there is no owner). The app, built with these values,
+read the contract, QIEDEX quote, QIE ID and oracle live on `/judge`, and `/check` returned "No QREACH record".
 
 ## Network (verified 2026-11-27)
 
@@ -40,7 +57,7 @@ The deployer has no special rights.
 - [x] `forge test` (72 unit/fuzz, 3 invariants) and the fork suite (4/4) pass, re-run 2026-11-28
 - [x] Deployer keystore exists and holds 0.05 QIE
 - [x] Simulation prints `preflight ok` and `chain 1990`; predicted address `0xecf0…7740`
-- [ ] Owner has approved the broadcast
+- [x] Owner approved the broadcast; deployed and verified (see top)
 
 ## 1. Keystore (once; the key never appears in a command or a file in the repo)
 
