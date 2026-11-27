@@ -34,8 +34,8 @@ public record: paste any post link into `/check` to see who paid, how much and w
 ## Architecture
 
 ```
-Next.js app (wagmi/viem) ──► Qreach.sol on QIE mainnet ──► QUSDC · QIEDEX router · QIE ID
-          └── reads: contract views, event logs, QIE oracle, QIEDEX quotes
+Next.js app (wagmi/viem) --> Qreach.sol on QIE mainnet --> QUSDC, QIEDEX router, QIE ID
+          +-- reads: contract views, event logs, QIE oracle, QIEDEX quotes
 ```
 
 Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Stack: Solidity 0.8.24, Foundry, OpenZeppelin 5.1,
@@ -71,8 +71,8 @@ FORK=1 forge test --match-contract Fork --fork-url https://rpc1mainnet.qie.digit
 cd app && npm run typecheck && npm test            # 19 Vitest tests
 ```
 
-End-to-end suites drive the real UI in headless Chromium against a local chain: the happy path, plus 15 edge cases
-including wrong network, wallet rejection, post squatting, missed deadlines, QIE leftover refunds and accounting.
+End-to-end suites drive the real UI in headless Chromium against a local chain: the happy path (10 steps), plus 14 edge-case
+steps including wrong network, wallet rejection, post squatting, missed deadlines, QIE leftover refunds and accounting.
 See [docs/TESTING.md](docs/TESTING.md).
 
 ## Deployment
@@ -83,7 +83,7 @@ How to deploy: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 |---|---|
 | Network | QIE Mainnet, chain 1990 |
 | QREACH contract | [`0xecf00C31f73296A1EFa9Fe4D3514813D93807740`](https://mainnet.qie.digital/address/0xecf00C31f73296A1EFa9Fe4D3514813D93807740) (verified source) |
-| Deployment tx | [`0xb11a9e90…`](https://mainnet.qie.digital/tx/0xb11a9e9087558fe70dd74119fc85de57e902a8bb9448ef87d5833666130b930f), block 12216479 |
+| Deployment tx | [`0xb11a9e90...`](https://mainnet.qie.digital/tx/0xb11a9e9087558fe70dd74119fc85de57e902a8bb9448ef87d5833666130b930f), block 12216479 |
 | Live demo | not hosted yet |
 | Example transactions | not available yet (two-wallet flow pending) |
 

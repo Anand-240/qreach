@@ -10,20 +10,20 @@ There is no backend and no database. The contract is the only source of truth. T
 contract views and rebuilds history from event logs in the browser.
 
 ```
-┌──────────── Browser (Next.js 15, wagmi 2, viem 2) ────────────┐
-│ pages: / /check /sponsor /sponsor/new /creator /c/[id]         │
-│        /k/[name] /judge                                        │
-│ lib/indexer.ts  ── getLogs in 9,999-block chunks from          │
-│                    NEXT_PUBLIC_DEPLOY_BLOCK, incremental cache │
-│ components/useTx.ts ── switch chain → simulate → sign →        │
-│                        wait for receipt → check status         │
-└───────────────┬───────────────────────────────┬───────────────┘
-                │ writes / reads                 │ reads only
-                ▼                                ▼
++------------ Browser (Next.js 15, wagmi 2, viem 2) ------------+
+| pages: / /check /sponsor /sponsor/new /creator /c/[id]         |
+|        /k/[name] /judge                                        |
+| lib/indexer.ts  -- getLogs in 9,999-block chunks from          |
+|                    NEXT_PUBLIC_DEPLOY_BLOCK, incremental cache |
+| components/useTx.ts -- switch chain, simulate, sign,           |
+|                        wait for receipt, check status          |
++---------------+-------------------------------+---------------+
+                | writes / reads                 | reads only
+                v                                v
      Qreach.sol (QIE mainnet)            QIE oracle (QIE/USD, display)
-       ├─ QUSDC (SafeERC20)              QIEDEX getAmountsIn (quote)
-       ├─ QIEDEX router (swapETHForExactTokens)
-       └─ QIE ID (domainOwnerByName)
+       +- QUSDC (SafeERC20)              QIEDEX getAmountsIn (quote)
+       +- QIEDEX router (swapETHForExactTokens)
+       +- QIE ID (domainOwnerByName)
 ```
 
 ## Contract: `contracts/src/Qreach.sol`
@@ -32,33 +32,33 @@ State per campaign: sponsor, creator, amount (uint128, 6 dp), acceptBy, deliverB
 status, submittedAt, paidAt, postHash.
 
 ```
-            accept (creator, ≤acceptBy)       submitWork (creator, ≤deliverBy)
- Created ─────────────────────────► Accepted ───────────────────────────► Submitted
-   │  │                                │                                     │
-   │  └ decline (creator) ► Declined   └ refundExpired (anyone, >deliverBy)   ├ approveAndPay (sponsor)
-   ├ cancel (sponsor) ───► Refunded         ► Refunded                       └ autoRelease (anyone,
-   └ refundExpired (anyone, >acceptBy) ► Refunded                               >submittedAt+review)
-                                                                               ► Paid
+            accept (creator, <=acceptBy)       submitWork (creator, <=deliverBy)
+ Created -------------------------> Accepted ---------------------------> Submitted
+   |  |                                |                                     |
+   |  + decline (creator) > Declined   + refundExpired (anyone, >deliverBy)   + approveAndPay (sponsor)
+   + cancel (sponsor) ---> Refunded         > Refunded                       + autoRelease (anyone,
+   + refundExpired (anyone, >acceptBy) > Refunded                               >submittedAt+review)
+                                                                               > Paid
 ```
 
 | Function | Who | Effect |
 |---|---|---|
 | `createCampaign` | sponsor | pull `amount` QUSDC (needs approval) |
-| `createCampaignWithQIE` | sponsor | swap QIE → exact QUSDC on QIEDEX, return unused QIE |
-| `cancel` | sponsor | Created → Refunded |
-| `accept` / `decline` | creator | Created → Accepted / Declined (refund) |
-| `submitWork` | creator | Accepted → Submitted; stores keccak256 of the normalised URL |
-| `approveAndPay` | sponsor | Submitted → Paid |
-| `autoRelease` | anyone | Submitted → Paid after the review window |
-| `refundExpired` | anyone | Created/Accepted → Refunded after the matching deadline |
+| `createCampaignWithQIE` | sponsor | swap QIE -> exact QUSDC on QIEDEX, return unused QIE |
+| `cancel` | sponsor | Created -> Refunded |
+| `accept` / `decline` | creator | Created -> Accepted / Declined (refund) |
+| `submitWork` | creator | Accepted -> Submitted; stores keccak256 of the normalised URL |
+| `approveAndPay` | sponsor | Submitted -> Paid |
+| `autoRelease` | anyone | Submitted -> Paid after the review window |
+| `refundExpired` | anyone | Created/Accepted -> Refunded after the matching deadline |
 | `setQieName` | anyone | links caller to a `.qie` label they own in QIE ID |
 
-Limits: minimum 0.5 QUSDC; brief ≤ 500 bytes; URL 10–300 bytes, `https://`, printable ASCII;
-review window 1 h–7 d. Every change emits an event (`CampaignCreated`, `Accepted`, `Declined`,
+Limits: minimum 0.5 QUSDC; brief <= 500 bytes; URL 10-300 bytes, `https://`, printable ASCII;
+review window 1 h-7 d. Every change emits an event (`CampaignCreated`, `Accepted`, `Declined`,
 `WorkSubmitted`, `PaidPromotion`, `Refunded`, `QieNameSet`).
 
 Creator stats (`completed`, `expired`, `earned`) are kept on chain for the Shill Score:
-`50 × delivered rate + 30 × min(1, completed/10) + 20 × min(1, sponsors/5)`.
+`50 x delivered rate + 30 x min(1, completed/10) + 20 x min(1, sponsors/5)`.
 
 ## Frontend: `app/`
 

@@ -1,6 +1,6 @@
-# Demo script (3–4 minutes)
+# Demo script (3-4 minutes)
 
-Prepare beforehand: wallet A (sponsor) with ≥ 1 QUSDC and some QIE, wallet B (creator) with a little
+Prepare beforehand: wallet A (sponsor) with >= 1 QUSDC and some QIE, wallet B (creator) with a little
 QIE for gas and, ideally, a `.qie` name linked on `/creator`. Publish a real post from B's social account.
 Keep a second browser profile signed in as B.
 
@@ -14,7 +14,7 @@ Keep a second browser profile signed in as B.
 | 2:40 | `/check` | Paste the post link from another share URL. It shows "Paid": who, how much, when, and the brief. Anyone can check this without a wallet. |
 | 3:05 | `/k/<name>` | Shill Score, computed only from on-chain history. |
 | 3:20 | `/judge` | Contract with no owner, no fee and no upgrade path. Five QIE components with live data. How to run the tests. |
-| 3:40 | — | Limits, stated plainly: no dispute process (silence pays the creator), the contract cannot see the post, the score can be farmed. |
+| 3:40 | - | Limits, stated plainly: no dispute process (silence pays the creator), the contract cannot see the post, the score can be farmed. |
 
 ## Transactions to capture for the README (after the live run)
 

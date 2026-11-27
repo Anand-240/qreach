@@ -21,11 +21,11 @@ Passing tests is not an audit. Use small amounts.
 | Reentrancy | `nonReentrant` on every function that moves funds; state set before transfers | `test_reentrancy_*` |
 | Double pay / refund | status checked, then set to a terminal state before transfer | `test_terminalStates_cannotMoveFundsAgain`, invariants |
 | Unauthorised actions | sponsor/creator checks on every role function | `test_*_only*`, `testFuzz_strangerCannotMoveFunds` |
-| Bad deadlines | accept-by in the future, deliver-by after it, review 1 h–7 d | `test_create_reverts*`, boundary tests |
-| Token transfer quirks | OpenZeppelin `SafeERC20` | — |
+| Bad deadlines | accept-by in the future, deliver-by after it, review 1 h-7 d | `test_create_reverts*`, boundary tests |
+| Token transfer quirks | OpenZeppelin `SafeERC20` | - |
 | Swap slippage | exact-output swap, input capped at `msg.value` (quote + 2% in the app), 15 min deadline, received amount checked, unused QIE returned | `test_createWithQIE_*`, fork test |
 | Stray native QIE | `receive` accepts only the router | `test_receive_onlyRouter` |
-| Junk URLs / XSS | on-chain: `https://`, printable ASCII, ≤300 bytes; app renders as text and `href` only | `test_submit_rejectsBadUrls` |
+| Junk URLs / XSS | on-chain: `https://`, printable ASCII, <=300 bytes; app renders as text and `href` only | `test_submit_rejectsBadUrls` |
 | Accounting drift | invariant: balance == open escrow; total supply conserved | invariants |
 
 ## Known limitations (by design, stated to users)
@@ -49,6 +49,9 @@ Passing tests is not an audit. Use small amounts.
 - Only `NEXT_PUBLIC_*` variables are read. The production bundle was scanned for key-like strings and
   none were found.
 - No backend, no cookies, no stored user data.
+- `npm audit --omit=dev` (2026-11-28) lists advisories only in transitive packages (`postcss` inside
+  Next.js, `decode-uri-component`, and `uuid` inside MetaMask libraries). The only fix offered is
+  `npm audit fix --force`, which changes major versions, so it is not applied.
 
 ## Reporting
 

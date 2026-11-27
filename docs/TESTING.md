@@ -1,18 +1,18 @@
 # Testing QREACH
 
-Results last run on 2026-11-27 (forge 1.8.3, Node 26.7).
+Results last run on 2026-11-28 (forge 1.8.3, Node 26.7).
 
 | Suite | Command | Result |
 |---|---|---|
 | Contract unit + fuzz | `cd contracts && forge test` | 72 passed (fuzz: 512 runs each) |
-| Contract invariants | (part of `forge test`) | 3 passed (64 runs × 32 calls) |
+| Contract invariants | (part of `forge test`) | 3 passed (64 runs x 32 calls) |
 | Mainnet fork | see below | 4 passed |
 | Format | `cd contracts && forge fmt --check` | passes |
 | App types | `cd app && npm run typecheck` | passes |
 | App unit (Vitest) | `cd app && npm test` | 19 passed |
 | App build | `cd app && npm run build` | passes |
 | E2E happy path | `RUN=1 node e2e/flow.mjs` | PASS (10 steps) |
-| E2E edge cases | `RUN=2 node e2e/edge-cases.mjs` | PASS (15 steps) |
+| E2E edge cases | `RUN=2 node e2e/edge-cases.mjs` | PASS (14 steps) |
 
 ## Contracts
 
@@ -46,9 +46,8 @@ and a real QIEDEX swap through `createCampaignWithQIE`.
 ## End-to-end (real UI, real contract, local chain)
 
 A small EIP-1193 test wallet is injected into headless Chromium and forwards to anvil. Nothing is
-mocked between the UI and the contract. **Run against a production build.** Under `next dev` the
-happy-path suite fails with a page error ("Invalid or unexpected token"). This is a known dev-server-only
-issue and also happens on the base commit.
+mocked between the UI and the contract. Both suites pass against `next dev` and against a
+production build (checked 2026-11-28). The steps below use a production build.
 
 Start anvil (terminal 1):
 
@@ -84,7 +83,7 @@ bash app/e2e/reset.sh && cd app && RUN=2 node e2e/edge-cases.mjs
 
 Screenshots go to `app/e2e/shots-<RUN>/` (git-ignored).
 
-Edge suite steps: A wrong network → switch; B reconnect after reload; **B2 a transaction started on the
+Edge suite steps: A wrong network -> switch; B reconnect after reload; **B2 a transaction started on the
 wrong network switches the wallet first**; C form validation; D wallet rejection; E stranger has no
 actions; F pending post on /check; G post reuse blocked; G2 post squatting; H missed deadline and score
 drop; I decline after the accept deadline; J phone-size pay-in-QIE with headroom returned; K indexing
